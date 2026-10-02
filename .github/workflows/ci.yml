@@ -1,0 +1,99 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Nightly, after the course day. Catches the platform moving underneath us.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+env:
+  # --locked, not --frozen: --frozen installs from the lockfile without checking
+  # it still matches pyproject.toml, so a dependency added without re-locking
+  # sails through CI and only breaks for the next person to run uv sync.
+  UV_LOCKED: "1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: ruff
+        run: uv run ruff check .
+      - name: no hardcoded business nouns
+        # The agent is graded in two jurisdictions and must read its terminology from
+        # the API. domain/locale.py is the only module allowed to name a noun.
+        run: uv run pytest tests/test_no_hardcoded_nouns.py -q
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: unit tests
+        # Hermetic: no network, no credentials, no model key.
+        run: uv run pytest tests/unit -q
+
+  harness-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: the task set
+        # The real deliverable. Runs every task against the in-memory platform,
+        # persists each run to runs/<ts>/ BEFORE scoring, then verifies by reading
+        # rows. Exits non-zero on any revise or unevaluated -- unevaluated is never
+        # a pass. No network, no credentials, no model key.
+        run: uv run python -m harness.runner
+
+      - name: replay the recorded run
+        # Both the MCP calls and the model calls come from cassettes, and the clock is
+        # frozen into the cassette metadata, so this needs no ANTHROPIC_API_KEY, spends
+        # nothing, and cannot drift as the recording ages. A failure means behaviour
+        # actually changed.
+        run: uv run pytest tests/test_replay_cassette.py -v
+      - name: upload run artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-runs
+          path: runs/
+          if-no-files-found: ignore
+
+  live-smoke:
+    # Read-only, both books. Never on pull requests: secrets must not be exposed there.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: discovery + drift check
+        # Fails when tools/list or the esign schemas move, which means the cassettes
+        # are stale and the capability set changed underneath us.
+        env:
+          AS_EMAIL: team18@theschoolofai.in
+          AS_PASSWORD_SURYODAYA: ${{ secrets.AS_PASSWORD_SURYODAYA }}
+          AS_PASSWORD_KEYSTONE: ${{ secrets.AS_PASSWORD_KEYSTONE }}
+          # AS_ALLOW_SEND is deliberately never set. Nothing in CI sends.
+        run: uv run python scripts/discover.py --check-drift
+      - name: upload discovery diff
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-drift
+          path: discovery/

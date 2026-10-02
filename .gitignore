@@ -1,0 +1,20 @@
+# Secrets — never commit. Written before any key exists on disk.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Harness output — one directory per local run, regenerated freely
+runs/*
+!runs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db

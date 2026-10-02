@@ -1,0 +1,369 @@
+{
+  "tool_policy_id": null,
+  "tools": [
+    {
+      "description": "Get the full schema for an entity: field names, types, options, relationships, children, behaviors, and flow states. Call this before creating or querying to know what fields exist.",
+      "name": "get_schema",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Query/list records from any entity with filters, sorting, and pagination. Filter syntax: simple value match, 'ne:value' for not-equal, 'gt:N' for greater-than, 'lt:N' for less-than.",
+      "name": "list",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "filters": {
+            "description": "Field filters, e.g. {\"status\": \"active\", \"amount\": \"gt:1000\"}",
+            "type": "object"
+          },
+          "limit": {
+            "description": "Max records (default 20, max 100)",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Skip N records for pagination",
+            "type": "integer"
+          },
+          "search": {
+            "description": "Text search within this entity",
+            "type": "string"
+          },
+          "sort_by": {
+            "description": "Field to sort by (default: created_at)",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "'asc' or 'desc' (default: desc)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Get a single record by ID. Returns all fields, computed fields, children, and available transitions.",
+      "name": "get",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Record UUID",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Create a new record. Call get_schema first to know required fields and valid options.",
+      "name": "create",
+      "parameters": {
+        "properties": {
+          "data": {
+            "description": "Field values for the new record",
+            "type": "object"
+          },
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "data"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Update an existing record. Only send the fields you want to change.",
+      "name": "update",
+      "parameters": {
+        "properties": {
+          "data": {
+            "description": "Fields to update",
+            "type": "object"
+          },
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Record UUID",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "id",
+          "data"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Delete a record by ID.",
+      "name": "delete",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Record UUID",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Transition a record's state in its workflow. Follow the workflow states returned by the record schema. Use get to see available _transitions on a record.",
+      "name": "transition",
+      "parameters": {
+        "properties": {
+          "action": {
+            "description": "Transition action name exactly as the flow spells it. Read it from the record's _transitions rather than guessing.",
+            "type": "string"
+          },
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Record UUID",
+            "type": "string"
+          },
+          "target_state": {
+            "description": "The state that action moves the record INTO, e.g. 'open', 'sent', 'completed'. Send both \u2014 either one resolves the transition.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "id",
+          "action",
+          "target_state"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Full-text search across all entities or a specific entity.",
+      "name": "search",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Optional: limit to this entity",
+            "type": "string"
+          },
+          "limit": {
+            "description": "Max results (default 20)",
+            "type": "integer"
+          },
+          "query": {
+            "description": "Search text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Count records in an entity with optional filters. Faster than list when you only need the total.",
+      "name": "count",
+      "parameters": {
+        "properties": {
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "filters": {
+            "description": "Optional filters",
+            "type": "object"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Create a new record from an existing one using document chains. Use the document chain defined by the source and target schemas. Automatically maps fields from source to target.",
+      "name": "make_from",
+      "parameters": {
+        "properties": {
+          "source_entity": {
+            "description": "Source entity name",
+            "type": "string"
+          },
+          "source_id": {
+            "description": "Source record UUID",
+            "type": "string"
+          },
+          "target_entity": {
+            "description": "Target entity name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_entity",
+          "source_id",
+          "target_entity"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Update multiple records at once.",
+      "name": "bulk_update",
+      "parameters": {
+        "properties": {
+          "data": {
+            "description": "Fields to update on all records",
+            "type": "object"
+          },
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "ids": {
+            "description": "List of record UUIDs",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "entity",
+          "ids",
+          "data"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Run an aggregate report query on an entity. Supports count, sum, avg, min, max, optionally grouped by a field. Aggregates the whole matching set, not one page \u2014 always prefer this over listing records and adding them up yourself. For accounts receivable/payable or any financial statement, use financial_report instead: it returns the same figures as the UI.",
+      "name": "report",
+      "parameters": {
+        "properties": {
+          "aggregate": {
+            "description": "Operation: count, sum, avg, min, max",
+            "type": "string"
+          },
+          "entity": {
+            "description": "Entity name",
+            "type": "string"
+          },
+          "field": {
+            "description": "Field to aggregate (required for sum/avg/min/max)",
+            "type": "string"
+          },
+          "filters": {
+            "description": "Optional filters",
+            "type": "object"
+          },
+          "group_by": {
+            "description": "Optional: group results by this field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity",
+          "aggregate"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "description": "Run a canonical accounting report \u2014 the same figures the dashboard and report screens show. Use this for receivables, payables, and the financial statements rather than summing invoices or bills yourself. Reports: ar_aging (accounts receivable / total outstanding by customer), ap_aging (accounts payable by vendor, incl. MSME 45-day exposure), balance_sheet, profit_and_loss, trial_balance, cash_flow, dashboard_summary (headline totals). The 'headline' field carries the top-line figure; do not re-add the buckets yourself.",
+      "name": "financial_report",
+      "parameters": {
+        "properties": {
+          "as_of": {
+            "description": "YYYY-MM-DD; aging and balance sheet. Defaults to today.",
+            "type": "string"
+          },
+          "book_id": {
+            "description": "Optional accounting book id. Defaults to Primary (with legacy history).",
+            "type": "string"
+          },
+          "compare": {
+            "description": "Optional: previous_period or previous_year.",
+            "type": "string"
+          },
+          "from_date": {
+            "description": "YYYY-MM-DD; P&L, trial balance, cash flow. Defaults to the fiscal year.",
+            "type": "string"
+          },
+          "report": {
+            "description": "Which report to run",
+            "enum": [
+              "ar_aging",
+              "ap_aging",
+              "balance_sheet",
+              "profit_and_loss",
+              "trial_balance",
+              "cash_flow",
+              "dashboard_summary"
+            ],
+            "type": "string"
+          },
+          "to_date": {
+            "description": "YYYY-MM-DD; P&L, trial balance, cash flow.",
+            "type": "string"
+          },
+          "view": {
+            "description": "Optional book view: primary (default), delta (one adjustment's deltas), adjusted (Primary + one adjustment), inventory (company-wide diagnostic).",
+            "enum": [
+              "primary",
+              "delta",
+              "adjusted",
+              "inventory"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "type": "object"
+      }
+    }
+  ],
+  "total": 13
+}

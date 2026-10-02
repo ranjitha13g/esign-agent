@@ -1,0 +1,26 @@
+{
+  "allowed_apps": [
+    "esign",
+    "agent",
+    "crm"
+  ],
+  "avatar_url": null,
+  "company_id": "5cbe5a55-af74-4363-a436-f5350593114c",
+  "created_at": "2026-09-13T03:59:17.241203",
+  "department_id": null,
+  "email": "team18@theschoolofai.in",
+  "employee_id": null,
+  "id": "159dd074-87ab-4a5c-9164-7b2897e5f1f1",
+  "is_active": 1,
+  "last_login": "2026-10-02T10:02:01.650676",
+  "name": "Team 18",
+  "needs_recovery_enrollment": true,
+  "party_id": null,
+  "role": "user",
+  "roles": [
+    "user",
+    "agent_user",
+    "sales_viewer"
+  ],
+  "team": ""
+}

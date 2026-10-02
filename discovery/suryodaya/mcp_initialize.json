@@ -1,0 +1,14 @@
+{
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    }
+  },
+  "instructions": "AgentSwitch business platform. Tools are scoped to the authenticated caller: you see only what your roles, app entitlements and row scope permit, and every call is executed through the same permission-checked path the REST API uses.",
+  "protocolVersion": "2025-11-25",
+  "serverInfo": {
+    "name": "agentswitch",
+    "title": "AgentSwitch",
+    "version": "1.0.0"
+  }
+}

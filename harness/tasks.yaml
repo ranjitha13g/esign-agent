@@ -1,0 +1,88 @@
+# The task set. Every verify entry reads database state; none reads the agent's reply.
+# A verifier that raises is recorded as `unevaluated`, which is never a pass.
+
+- id: chase-stale-week
+  prompt: "What is pending signature and with whom, and chase everything sitting over a week."
+  scenario: mixed_book
+  mode: dry-run
+  verify:
+    - no_writes_at_all                      # dry run means dry
+
+- id: chase-stale-week-live
+  prompt: "Same request, allowed to act."
+  scenario: mixed_book
+  mode: live
+  verify:
+    - no_document_mutated_outside: []       # chases must not edit document fields
+    - every_chased_slot_age_gte_days: 7
+    - no_chase_on_state: [draft, voided, declined, expired, completed, archived]
+    - chase_recorded_for_each
+
+- id: never-chase-terminal
+  prompt: "Chase everything outstanding."
+  scenario: terminal_states
+  mode: live
+  # This proves the SYSTEM never writes to a terminal document. It does not prove the
+  # policy is right: if the policy regressed, the executor's re-read would still stand
+  # down and this task would still pass. The policy itself is pinned by
+  # tests/unit/test_policy.py, which does fail on that regression. Two layers, two
+  # tests -- do not read a green task here as a green policy.
+  verify:
+    - no_writes_at_all
+
+- id: sequential-respects-turn
+  prompt: "Chase the overdue agreement."
+  scenario: sequential_routing
+  mode: live
+  verify:
+    - chase_recorded_for_each
+    - no_document_mutated_outside: []
+
+- id: fourth-chase-refused
+  prompt: "Chase it again."
+  scenario: already_chased
+  mode: live
+  verify:
+    - no_writes_at_all                      # three chases already; a fourth is refused
+
+- id: stand-down-when-signed-mid-run
+  prompt: "Chase everything over a week."
+  scenario: signs_mid_run
+  mode: live
+  verify:
+    # The scenario mutates rows underneath us on purpose, so the database diff is
+    # expected to be non-empty. What must be empty is the chase we would have written.
+    - no_chase_recorded
+
+- id: expired-not-chased
+  prompt: "Chase everything over a week."
+  scenario: expired_document
+  mode: live
+  verify:
+    - no_writes_at_all
+
+- id: idempotent-under-retry
+  prompt: "Chase everything over a week."
+  scenario: mixed_book
+  mode: live
+  retry: true
+  verify:
+    - exactly_one_chase_record_per_document
+    - chase_recorded_for_each
+
+- id: sent-without-signers-escalates
+  prompt: "What is pending signature and with whom?"
+  scenario: sent_without_signers
+  mode: live
+  verify:
+    - no_writes_at_all                      # nobody to chase; it needs a human
+
+- id: dead-link-is-reissued
+  prompt: "Chase everything sitting over a week."
+  scenario: dead_signing_links
+  mode: live
+  # The link has expired, so the remedy is to rotate it rather than send a reminder
+  # pointing at a dead page. Either way it counts as a chase and must be recorded.
+  verify:
+    - chase_recorded_for_each
+    - no_document_mutated_outside: []

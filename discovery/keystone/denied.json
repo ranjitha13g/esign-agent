@@ -1,0 +1,14 @@
+{
+  "Contract": {
+    "__body__": {
+      "detail": "App 'contracts' is not enabled for your account"
+    },
+    "__status__": 403
+  },
+  "SalarySlip": {
+    "__body__": {
+      "detail": "App 'payroll' is not enabled for your account"
+    },
+    "__status__": 403
+  }
+}
