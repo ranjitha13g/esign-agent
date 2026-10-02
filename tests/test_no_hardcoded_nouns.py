@@ -10,8 +10,6 @@ resolved names as data.
 
 This inspects string literals via the AST rather than grepping raw text, so a noun in a
 comment or docstring explaining the rule does not trip the rule.
-
-DRAFT -- re-author by hand before submission.
 """
 
 from __future__ import annotations

@@ -3,8 +3,6 @@
 Suryodaya holds 95 drafts and 5 sent documents with no signers at all, so none of the
 decisions that matter can be exercised against it -- and created_at is server-stamped,
 so the missing cases cannot be seeded there either. They are constructed here.
-
-DRAFT -- re-author by hand before submission.
 """
 
 from __future__ import annotations

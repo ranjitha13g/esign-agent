@@ -3,8 +3,6 @@
 It had no test, so renaming a Document attribute broke `agent.run` silently while all
 71 other tests stayed green. These cover the branches the live book and the fake each
 produce, so the next rename fails here instead of at the command line.
-
-DRAFT -- re-author by hand before submission.
 """
 
 from __future__ import annotations

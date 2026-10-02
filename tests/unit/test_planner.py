@@ -1,7 +1,4 @@
-"""The loop: tool dispatch, seat boundaries, and replay determinism.
-
-DRAFT -- re-author by hand before submission.
-"""
+"""The loop: tool dispatch, seat boundaries, and replay determinism."""
 
 from __future__ import annotations
 

@@ -2,8 +2,6 @@
 
 These were all written after probing the agent rather than before: each one pins a
 weakness that was found by trying to break it, not by imagining how it might break.
-
-DRAFT -- re-author by hand before submission.
 """
 
 from __future__ import annotations
