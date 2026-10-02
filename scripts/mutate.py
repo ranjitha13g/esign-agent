@@ -106,6 +106,19 @@ MUTATIONS = [
     Mutation("planner", "let the loop spin without limit",
              "agent/planner.py", "MAX_TURNS = 12", "MAX_TURNS = 10_000"),
 
+    # -- active_domains gate ---------------------------------------------------
+    Mutation("domains", "write without checking active_domains",
+             "agent/executor.py", "        if blocked is not None:", "        if False:"),
+    Mutation("domains", "gate live runs only, so dry runs lie",
+             "agent/executor.py", "        if blocked is not None:",
+             "        if blocked is not None and self.mode is Mode.LIVE:"),
+    Mutation("domains", "treat an unknown domain list as permissive",
+             "domain/locale.py", "        return domain in self.active_domains",
+             "        return not self.active_domains or domain in self.active_domains"),
+    Mutation("client", "mark every call safe to retry",
+             "mcp/client.py", "        safe_to_repeat = not tool.is_write or \"idempotency_key\" in args",
+             "        safe_to_repeat = True"),
+
     # -- harness --------------------------------------------------------------
     Mutation("harness", "swallow a verifier that raises",
              "harness/verify.py", "            checks.append(Check(name, Verdict.UNEVALUATED, f\"{type(exc).__name__}: {exc}\"))",

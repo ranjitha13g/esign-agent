@@ -159,6 +159,17 @@ def exactly_one_chase_record_per_document(e: Evidence) -> Check:
     return _check("exactly_one_chase_record_per_document", not dupes, "; ".join(dupes))
 
 
+def at_least_one_chase(e: Evidence) -> Check:
+    """Something was actually chased.
+
+    Pair this with chase_recorded_for_each on any task whose point is that chasing
+    happens. On its own that verifier iterates chased_ids, so when nothing is chased
+    it passes having checked nothing -- which is how a task meant to prove writes
+    occur stayed green after a bug blocked every write.
+    """
+    return _check("at_least_one_chase", bool(e.chased_ids), "nothing was chased at all")
+
+
 def no_chase_recorded(e: Evidence) -> Check:
     """We did not chase anybody.
 
@@ -188,6 +199,7 @@ REGISTRY: dict[str, Callable[..., Verifier] | Verifier] = {
     "no_chase_on_state": no_chase_on_state,
     "chase_recorded_for_each": chase_recorded_for_each,
     "exactly_one_chase_record_per_document": exactly_one_chase_record_per_document,
+    "at_least_one_chase": at_least_one_chase,
     "no_chase_recorded": no_chase_recorded,
     "no_writes_at_all": no_writes_at_all,
 }

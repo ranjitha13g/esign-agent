@@ -99,6 +99,102 @@ def test_a_claimed_chase_with_no_record_is_caught():
     assert run_all(["chase_recorded_for_each"], e)[0].verdict is Verdict.REVISE
 
 
+# -- active_domains gates writes, never reads ---------------------------------
+
+
+def test_a_claimed_chase_check_passes_vacuously_without_the_guard():
+    """Why at_least_one_chase exists.
+
+    chase_recorded_for_each iterates chased_ids, so with none it passes having
+    checked nothing. A bug that blocked every write once left a task green this way.
+    """
+    e = Evidence(before=rows(), after=rows(), chased_ids=(), now=NOW)
+    assert run_all(["chase_recorded_for_each"], e)[0].verdict is Verdict.APPROVE
+    assert run_all(["at_least_one_chase"], e)[0].verdict is Verdict.REVISE
+
+
+def test_locale_permits_a_write_only_to_a_listed_domain():
+    from domain.locale import Locale
+
+    loc = Locale("c1", "Co", "India", "INR", active_domains=("esign", "crm"))
+    assert loc.permits_write("esign")
+    assert not loc.permits_write("agent")
+
+
+def test_an_unknown_domain_list_refuses_every_write():
+    """Fails closed: refusing costs an unsent chase, writing into a deactivated app
+    on a shared book costs everyone else."""
+    from domain.locale import Locale
+
+    assert not Locale("c1", "Co", "India", "INR").permits_write("esign")
+
+
+def test_the_executor_refuses_when_the_owning_app_is_inactive():
+    import datetime as dtm
+
+    from agent.executor import Executor, Mode
+    from agent.policy import triage
+    from domain.esign import assemble
+    from domain.locale import resolve
+    from harness.scenarios import domain_deactivated
+    from mcp.client import McpClient
+
+    platform = domain_deactivated()
+    client = McpClient(platform)
+    client.connect()
+    locale = resolve(client.call("Company.list", {})["data"])
+    docs = assemble(client.page("EsignDocument.list"), client.page("EsignSigner.list"))
+
+    ex = Executor(client, Mode.LIVE, locale=locale)
+    outcomes = [ex.execute(d) for d in triage(docs, now=dtm.datetime.now(dtm.UTC))]
+
+    assert not any(o.performed for o in outcomes)
+    assert any("active domain" in o.detail for o in outcomes)
+    assert not platform.rows["AgentMemory"], "a chase was recorded despite the gate"
+
+
+def test_a_dry_run_reports_the_refusal_rather_than_a_cheerful_draft():
+    """A dry run must predict what a live run would do.
+
+    This is the trap that nearly hid the gate from its own verification: gating only
+    live runs made the dry run say "drafted, not sent" for a domain it could never
+    write to, so every dry-run check looked identical before and after the fix.
+    """
+    import datetime as dtm
+
+    from agent.executor import Executor, Mode
+    from agent.policy import triage
+    from domain.esign import assemble
+    from domain.locale import resolve
+    from harness.scenarios import domain_deactivated
+    from mcp.client import McpClient
+
+    platform = domain_deactivated()
+    client = McpClient(platform)
+    client.connect()
+    locale = resolve(client.call("Company.list", {})["data"])
+    docs = assemble(client.page("EsignDocument.list"), client.page("EsignSigner.list"))
+
+    ex = Executor(client, Mode.DRY_RUN, locale=locale)
+    details = [ex.execute(d).detail for d in triage(docs, now=dtm.datetime.now(dtm.UTC))]
+    assert any("active domain" in d for d in details)
+    assert not any("drafted, not sent" in d for d in details)
+
+
+def test_reads_are_never_gated():
+    """The guideline is explicit: writes only. An agent that cannot read cannot
+    report honestly about what it cannot do."""
+    from domain.locale import resolve
+    from harness.scenarios import domain_deactivated
+    from mcp.client import McpClient
+
+    platform = domain_deactivated()
+    client = McpClient(platform)
+    client.connect()
+    assert resolve(client.call("Company.list", {})["data"]).country
+    assert client.page("EsignDocument.list"), "reading was blocked, which it must not be"
+
+
 # -- the runner ---------------------------------------------------------------
 
 

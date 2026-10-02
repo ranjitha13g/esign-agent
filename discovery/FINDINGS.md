@@ -163,6 +163,32 @@ Three consequences, each of which changed the code:
    built the chase layer around that false premise. This is precisely the failure the
    course warns about: well formed, and wrong.
 
+## 10. Data anomalies worth knowing before trusting `status`
+
+Surfaced by the agent while answering unrelated questions, then confirmed directly
+against the API on 2 October 2026.
+
+**Signers have acted on documents that were never sent.** On Suryodaya, four signer
+rows are `signed` or `viewed` while their document is still `draft`:
+
+| signer status | document status | document |
+|---|---|---|
+| signed | draft | Job Work Agreement renewal, Shreeji Powder Coating |
+| viewed | draft | Mutual NDA, Vardhman Aerospace SEZ Unit |
+| viewed | draft | Renewal, Bharat EV Motors master supply agreement |
+| viewed | draft | Offer Letter, Ashwini Mohite |
+
+A signing link is minted by `send_for_signature`, so a signer should have no way to
+open -- let alone sign -- a document that was never sent. Either the states can drift
+apart, or the seed data was written directly. Either way, **`EsignSigner.status` and
+`EsignDocument.status` cannot be assumed consistent**, which is why the policy checks
+the document state first and treats the signer state as subordinate.
+
+**Owner and counterparty disagree with the title.** `Complaint — Shreeji Metal Works
+Engineering Works` has counterparty `Bharat EV Motors Ltd`. Titles are free text and
+are not a reliable guide to who a document concerns -- another reason the policy reads
+structured fields only.
+
 ## Still open
 
 - Keystone: everything above needs re-running on the US book.

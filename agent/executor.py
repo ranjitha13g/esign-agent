@@ -24,7 +24,12 @@ from enum import StrEnum
 from typing import Any
 
 from agent.policy import Action, Decision
+from domain.esign import DOMAIN as ESIGN_DOMAIN
+from domain.locale import Locale
 from mcp.client import McpClient, McpError
+
+# Our own workspace, as the platform names it in Company.active_domains.
+AGENT_DOMAIN = "agent"
 
 
 class Mode(StrEnum):
@@ -46,9 +51,28 @@ def chase_key(document_id: str) -> str:
 
 
 class Executor:
-    def __init__(self, mcp: McpClient, mode: Mode = Mode.DRY_RUN) -> None:
+    def __init__(
+        self, mcp: McpClient, mode: Mode = Mode.DRY_RUN, locale: Locale | None = None
+    ) -> None:
         self.mcp = mcp
         self.mode = mode
+        # Guideline section 13: active_domains gates writes, never reads. Without a
+        # locale we cannot confirm any domain is active, so nothing may be written.
+        self.locale = locale
+
+    def _blocked_domain(self) -> str | None:
+        """Which domain, if any, stops us writing. None means go ahead.
+
+        Checked for both apps we touch: the app that owns the documents, and our own
+        workspace where the chase record lives. A chase that cannot be recorded is not
+        a chase we should make -- it would repeat on the next run.
+        """
+        if self.locale is None:
+            return "unknown"
+        for domain in (ESIGN_DOMAIN, AGENT_DOMAIN):
+            if not self.locale.permits_write(domain):
+                return domain
+        return None
 
     # -- chase history ----------------------------------------------------
 
@@ -121,6 +145,20 @@ class Executor:
             return Outcome(decision.document_id, decision.action.value, False, "not actionable")
 
         draft = self.compose(decision)
+
+        # Checked in both modes on purpose. Gating only live runs would let a dry run
+        # report "drafted, not sent" for a domain it could never write to -- a cheerful
+        # plan that would fail the moment anyone acted on it.
+        blocked = self._blocked_domain()
+        if blocked is not None:
+            return Outcome(
+                decision.document_id,
+                decision.action.value,
+                False,
+                f"refused: this company does not list {blocked!r} as an active domain, "
+                "so writes to it are not permitted",
+                draft,
+            )
 
         if self.mode is Mode.DRY_RUN:
             return Outcome(

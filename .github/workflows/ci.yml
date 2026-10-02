@@ -63,7 +63,7 @@ jobs:
         # frozen into the cassette metadata, so this needs no ANTHROPIC_API_KEY, spends
         # nothing, and cannot drift as the recording ages. A failure means behaviour
         # actually changed.
-        run: uv run pytest tests/test_replay_cassette.py -v
+        run: uv run pytest tests/test_prompt_behaviour.py -v
       - name: upload run artefacts
         if: always()
         uses: actions/upload-artifact@v4

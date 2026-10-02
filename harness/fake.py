@@ -69,7 +69,13 @@ class FakePlatform:
                     "name": "Example Precision Works",
                     "country": "India",
                     "default_currency": "INR",
-                    "active_domains": [{"domain": "esign"}, {"domain": "crm"}],
+                    # Mirrors the live books, which both list all 27 domains. A scenario that
+                    # wants the write gate to bite overrides this.
+                    "active_domains": [
+                        {"domain": "esign"},
+                        {"domain": "agent"},
+                        {"domain": "crm"},
+                    ],
                 }
             ],
             "EsignDocument": [],
