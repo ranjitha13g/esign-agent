@@ -1,9 +1,8 @@
-"""Client behaviour: envelope errors, catalogue scoping, closed schemas, idempotency.
-
-DRAFT -- re-author by hand before submission.
-"""
+"""Client behaviour: envelope errors, catalogue scoping, closed schemas, idempotency."""
 
 from __future__ import annotations
+
+import json
 
 import pytest
 
@@ -156,7 +155,24 @@ def test_idempotency_key_is_not_forced_where_the_schema_forbids_it():
 
 
 def test_reads_do_not_carry_an_idempotency_key():
-    c, t = connected([{"result": {"ok": True}}])
+    """The read tool here *does* accept the field, so the schema cannot be what
+    stops it. Only the is_write check can -- which is the thing under test.
+
+    The earlier version of this test used a schema without the property, so it
+    passed whether or not that check existed. Mutation testing caught it.
+    """
+    read_tool = {
+        "name": "EsignDocument.list",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer"},
+                "idempotency_key": {"type": "string"},
+            },
+            "additionalProperties": False,
+        },
+    }
+    c, t = connected([{"result": {"ok": True}}], tools=(read_tool, UPDATE_TOOL, VOID_TOOL))
     c.call("EsignDocument.list", {"limit": 1}, idempotency_key="abc123")
     assert "idempotency_key" not in t.calls[-1][1]["arguments"]
 
@@ -196,3 +212,67 @@ def test_is_error_flag_raises_even_though_the_envelope_looks_fine():
 def test_result_without_content_passes_through_unchanged():
     c, _ = connected([{"result": {"tools": []}}])
     assert c.call("EsignDocument.list", {}) == {"tools": []}
+
+
+
+# -- paging -------------------------------------------------------------------
+# No test covered page(); mutation testing found that stopping after the first page
+# went unnoticed. That is the exact bug that once reported "nothing is pending" while
+# five sent documents sat on page two.
+
+
+def paged(total: int, page_size: int = 100):
+    """A list tool that answers in pages, as the platform does."""
+    rows = [{"id": f"d{i}"} for i in range(total)]
+
+    class T:
+        def __init__(self):
+            self.offsets = []
+
+        def call(self, method, params=None, *, retriable=True):
+            if method != "tools/call":
+                return {"result": {}}
+            args = params["arguments"]
+            off = args.get("offset", 0)
+            lim = args.get("limit", page_size)
+            self.offsets.append(off)
+            body = {"data": rows[off : off + lim], "total": total, "offset": off}
+            text = json.dumps(body)
+            return {"result": {"content": [{"type": "text", "text": text}]}}
+
+        def close(self):
+            pass
+
+    return T()
+
+
+PAGED_TOOL_SCHEMA = {
+    "type": "object",
+    "properties": {"limit": {"type": "integer"}, "offset": {"type": "integer"}},
+    "additionalProperties": False,
+}
+
+
+def connected_to(transport):
+    c = McpClient(transport)
+    c._tools = {"EsignDocument.list": Tool("EsignDocument.list", "", PAGED_TOOL_SCHEMA)}
+    return c
+
+
+def test_page_reads_every_page_not_just_the_first():
+    t = paged(250)
+    rows = connected_to(t).page("EsignDocument.list", page_size=100)
+    assert len(rows) == 250
+    assert t.offsets == [0, 100, 200]
+
+
+def test_page_handles_an_exact_multiple_without_an_extra_call():
+    t = paged(200)
+    rows = connected_to(t).page("EsignDocument.list", page_size=100)
+    assert len(rows) == 200
+
+
+def test_page_on_an_empty_entity_returns_nothing_and_stops():
+    t = paged(0)
+    assert connected_to(t).page("EsignDocument.list", page_size=100) == []
+    assert t.offsets == [0]

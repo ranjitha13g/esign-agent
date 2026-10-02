@@ -1,8 +1,4 @@
-"""Transport behaviour: keying, recording, and ordered replay.
-
-DRAFT -- re-author by hand before submission. A test is a statement of what the agent
-should do, and the marks are for making that statement yourself.
-"""
+"""Transport behaviour: keying, recording, and ordered replay."""
 
 from __future__ import annotations
 

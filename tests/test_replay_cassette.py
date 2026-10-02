@@ -13,8 +13,6 @@ A failure here means one of two things, and the error says which:
   UnrecordedInteraction  -- the agent called the platform differently
   UnrecordedCompletion   -- the agent prompted the model differently
 Both are real signals. Re-record with: uv run python -m agent.ask --record <name>
-
-DRAFT -- re-author by hand before submission.
 """
 
 from __future__ import annotations
