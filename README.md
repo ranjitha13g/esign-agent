@@ -10,7 +10,8 @@ documents is a demo; deciding **who to chase, who not to chase, and who to stop
 chasing** is the seat.
 
 Platform findings and the competitive analysis live in [GAP_REPORT.md](GAP_REPORT.md)
-and [discovery/FINDINGS.md](discovery/FINDINGS.md).
+and [discovery/FINDINGS.md](discovery/FINDINGS.md). What the agent was asked and what
+it answered is in [PROMPT_TESTS.md](PROMPT_TESTS.md).
 
 ---
 
@@ -323,7 +324,7 @@ uv run pytest tests/unit -q    # hermetic
 | `tests/unit/test_resilience.py` | retries, oversize results, dead links, hostile titles |
 | `tests/unit/test_harness.py` | the harness's own machinery: verdict semantics, persistence on failure |
 | `tests/test_no_hardcoded_nouns.py` | AST scan for business nouns outside `locale.py` |
-| `tests/test_replay_cassette.py` | planner regression against a recorded run |
+| `tests/test_prompt_behaviour.py` | six recorded prompts replayed: refusals, false premises, out-of-seat asks |
 
 **Two layers, deliberately.** The harness proves *system* behaviour by reading rows; the
 unit tests pin the *policy*. Break the policy so it chases terminal documents and
@@ -378,8 +379,8 @@ It also catches two things a plain `pytest` will not:
 - **a stale lockfile** — jobs run `uv sync --locked`, which asserts `uv.lock` still
   matches `pyproject.toml`. (`--frozen`, the obvious choice, installs happily from a
   stale lockfile.)
-- **a silently skipped replay test** — it skips itself when no cassette is committed,
-  and pytest reports that as success.
+- **silently skipped replay tests** — they skip themselves when no cassette is
+  committed, and pytest reports that as success.
 
 What only exists on GitHub — `astral-sh/setup-uv`, the cache, secrets, the schedule and
 artifact upload:

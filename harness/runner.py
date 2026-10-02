@@ -33,6 +33,7 @@ sys.path.insert(0, str(ROOT))
 from agent.executor import Executor, Mode  # noqa: E402
 from agent.policy import triage  # noqa: E402
 from domain.esign import assemble  # noqa: E402
+from domain.locale import resolve  # noqa: E402
 from harness import scenarios  # noqa: E402
 from harness.verify import Evidence, Verdict, run_all  # noqa: E402
 from mcp.client import McpClient  # noqa: E402
@@ -59,7 +60,8 @@ def execute_task(task: dict[str, Any], out_dir: Path) -> dict[str, Any]:
     now = dt.datetime.now(dt.UTC)
 
     docs, signers = read_world(client)
-    executor = Executor(client, Mode(task.get("mode", "dry-run")))
+    locale = resolve(client.call("Company.list", {}).get("data", []))
+    executor = Executor(client, Mode(task.get("mode", "dry-run")), locale=locale)
     decisions = triage(assemble(docs, signers), chase_history=executor.chase_history(), now=now)
 
     outcomes: list[dict[str, Any]] = []

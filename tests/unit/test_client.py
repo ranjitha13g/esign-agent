@@ -276,3 +276,28 @@ def test_page_on_an_empty_entity_returns_nothing_and_stops():
     t = paged(0)
     assert connected_to(t).page("EsignDocument.list", page_size=100) == []
     assert t.offsets == [0]
+
+
+# -- which calls may be retried -----------------------------------------------
+# retry.py was tested on its own, but nothing checked that the client *decides*
+# correctly. Mutation testing found that marking every call retriable went unnoticed.
+
+
+def test_a_write_without_an_idempotency_key_is_not_retriable():
+    """The attempt that looked like it failed may well have landed. Repeating it
+    could chase somebody twice."""
+    c, t = connected([{"result": {"ok": True}}])
+    c.call("EsignDocument.void", {"id": "d1"})
+    assert t.calls[-1][2] is False
+
+
+def test_a_write_carrying_an_idempotency_key_is_retriable():
+    c, t = connected([{"result": {"ok": True}}])
+    c.call("EsignDocument.update", {"id": "d1"}, idempotency_key="abc")
+    assert t.calls[-1][2] is True
+
+
+def test_reads_are_always_retriable():
+    c, t = connected([{"result": {"ok": True}}])
+    c.call("EsignDocument.list", {"limit": 1})
+    assert t.calls[-1][2] is True

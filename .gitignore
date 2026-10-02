@@ -18,3 +18,8 @@ runs/*
 # OS
 .DS_Store
 Thumbs.db
+
+# coverage output
+.coverage
+.coverage.*
+htmlcov/

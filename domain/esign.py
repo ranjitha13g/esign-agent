@@ -20,6 +20,9 @@ from dataclasses import dataclass
 from typing import Any
 
 # A signer in one of these states will never sign this document.
+# The app that owns these entities, as the platform names it in active_domains.
+DOMAIN = "esign"
+
 SIGNER_TERMINAL = frozenset({"signed", "declined"})
 # A signer in one of these states still owes us something.
 SIGNER_OUTSTANDING = frozenset({"pending", "viewed"})

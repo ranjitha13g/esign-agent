@@ -159,6 +159,22 @@ def dead_signing_links() -> FakePlatform:
     return p
 
 
+def domain_deactivated() -> FakePlatform:
+    """The owning app is not listed in Company.active_domains.
+
+    Guideline section 13: active_domains gates writes, never reads. The documents are
+    perfectly chaseable on their own terms, so a policy-only check would act on them.
+    """
+    p = FakePlatform()
+    p.rows["Company"][0]["active_domains"] = [{"domain": "crm"}]
+    p.add_document(
+        title="Stale, but the app is switched off",
+        days_old=30,
+        signers=[{"status": "viewed", "last_opened_at": "2026-09-01T00:00:00+00:00"}],
+    )
+    return p
+
+
 def out_of_seat() -> FakePlatform:
     """Contract belongs to another seat and is absent from the catalogue."""
     return FakePlatform(absent=("Contract", "SalarySlip"))

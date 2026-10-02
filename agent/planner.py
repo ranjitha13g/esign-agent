@@ -50,9 +50,11 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "pending_signatures",
         "description": (
-            "The full picture: every document, who it waits on, how long it has sat, "
-            "and a verdict per document (chase, reissue, stop_chasing, escalate, skip) "
-            "with the reason. Start here for anything about what is outstanding."
+            "The full picture: a summary with counts, then every document, who it "
+            "waits on, how long it has sat, and a verdict (chase, reissue, "
+            "stop_chasing, escalate, skip) with the reason. Start here for anything "
+            "about what is outstanding. Use summary.agent_can_act for 'how many need "
+            "chasing' -- reissue is a chase whose link had to be replaced."
         ),
         "input_schema": {"type": "object", "properties": {}},
     },
@@ -118,10 +120,35 @@ class Planner:
         docs = assemble(self.mcp.page("EsignDocument.list"), self.mcp.page("EsignSigner.list"))
         by_id = {d.id: d for d in docs}
         decisions = triage(docs, chase_history={}, now=self.now)
+
+        # Counts, so the answer to "how many need chasing?" does not depend on the
+        # model noticing that the verdict is spelled 'reissue'. Asked that question
+        # against a book with ten stuck documents, it answered 0 -- correct by the
+        # policy's vocabulary, useless to the person asking, because in plain English
+        # chasing covers both.
+        by_verdict: dict[str, int] = {}
+        for d in decisions:
+            by_verdict[d.action.value] = by_verdict.get(d.action.value, 0) + 1
+        agent_can_act = by_verdict.get("chase", 0) + by_verdict.get("reissue", 0)
+        needs_a_human = by_verdict.get("escalate", 0) + by_verdict.get("stop_chasing", 0)
+
         return {
             "as_of": self.now.isoformat(),
             "jurisdiction": {"country": locale.country, "currency": locale.currency},
             "document_count": len(docs),
+            "summary": {
+                "needs_action": agent_can_act + needs_a_human,
+                "agent_can_act": agent_can_act,
+                "needs_a_human": needs_a_human,
+                "no_action_needed": by_verdict.get("skip", 0),
+                "by_verdict": by_verdict,
+                "note": (
+                    "In plain language 'chasing' covers both 'chase' and 'reissue' -- "
+                    "a reissue is a chase whose link had to be replaced. Answer a "
+                    "question about how many need chasing with agent_can_act, not "
+                    "with the 'chase' verdict alone."
+                ),
+            },
             "verdicts": [
                 {
                     "document_id": d.document_id,

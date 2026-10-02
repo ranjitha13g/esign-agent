@@ -32,6 +32,18 @@ class Locale:
     def is_known(self) -> bool:
         return bool(self.country)
 
+    def permits_write(self, domain: str) -> bool:
+        """Guideline section 13: active_domains gates writes, never reads.
+
+        Fails closed. If the company does not list the domain -- or lists nothing at
+        all, so we cannot tell -- we decline to write. Refusing costs an unsent chase;
+        writing into a deactivated app on a shared book costs everyone else.
+
+        Reads are never gated. The seat boundary already handles those, and an agent
+        that cannot read cannot report honestly about what it cannot do.
+        """
+        return domain in self.active_domains
+
     def describe(self) -> str:
         return f"{self.company_name} ({self.country}, {self.currency})"
 

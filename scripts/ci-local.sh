@@ -50,11 +50,11 @@ run "lint: ruff"                  uv run ruff check .
 run "lint: no hardcoded nouns"    uv run pytest tests/test_no_hardcoded_nouns.py -q
 run "unit"                        uv run pytest tests/unit -q
 run "harness: the task set"       uv run python -m harness.runner
-run "harness: replay recorded run" uv run pytest tests/test_replay_cassette.py -q
+run "harness: replay recorded run" uv run pytest tests/test_prompt_behaviour.py -q
 
 # The replay test skips itself when no cassette is committed. A skip is not a pass,
 # and a silently-skipped regression net is worse than none.
-if uv run pytest tests/test_replay_cassette.py -q 2>&1 | grep -qi "skipped"; then
+if uv run pytest tests/test_prompt_behaviour.py -q 2>&1 | grep -qi "skipped"; then
   printf '\033[31mFAIL\033[0m cassettes are not committed, so the replay test skipped in CI\n'
   FAILED=1
 fi

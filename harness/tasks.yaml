@@ -16,6 +16,7 @@
     - no_document_mutated_outside: []       # chases must not edit document fields
     - every_chased_slot_age_gte_days: 7
     - no_chase_on_state: [draft, voided, declined, expired, completed, archived]
+    - at_least_one_chase          # or chase_recorded_for_each passes having checked nothing
     - chase_recorded_for_each
 
 - id: never-chase-terminal
@@ -35,6 +36,7 @@
   scenario: sequential_routing
   mode: live
   verify:
+    - at_least_one_chase
     - chase_recorded_for_each
     - no_document_mutated_outside: []
 
@@ -67,6 +69,7 @@
   mode: live
   retry: true
   verify:
+    - at_least_one_chase
     - exactly_one_chase_record_per_document
     - chase_recorded_for_each
 
@@ -84,5 +87,16 @@
   # The link has expired, so the remedy is to rotate it rather than send a reminder
   # pointing at a dead page. Either way it counts as a chase and must be recorded.
   verify:
+    - at_least_one_chase
     - chase_recorded_for_each
     - no_document_mutated_outside: []
+
+- id: inactive-domain-blocks-writes
+  prompt: "Chase everything sitting over a week."
+  scenario: domain_deactivated
+  mode: live
+  # Guideline section 13: active_domains gates writes, never reads. The document is
+  # stale and chaseable, so only the domain gate can stop it.
+  verify:
+    - no_writes_at_all
+    - no_chase_recorded
